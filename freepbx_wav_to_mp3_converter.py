@@ -27,6 +27,6 @@ for unique_id, record_file in result:
     name, ext = os.path.splitext(record_file)
     if ext == ".wav":
         print(ext)
-        cursor.execute("UPDATE cdr SET recordingfile='{}.".format(name) + file_format + "'" + " WHERE uniqueid='{}'".format(unique_id))
+        cursor.execute("UPDATE cdr SET recordingfile=CONCAT(%s, '.', %s) WHERE uniqueid=%s", (name, file_format, unique_id))
         conn.commit()
 
