@@ -18,14 +18,19 @@ elif nargs == 3:
     supervisor_service = sys.argv[1]
     service_status = sp.check_output(["supervisorctl", "status", supervisor_service]).decode()
     if "(no such process)" in service_status:
-        print("Process does not exists")
+        print("Process does not exist")
     else:
         if sys.argv[2] == "uptime":
             service_uptime = service_status.split()[5]
             print(service_uptime)
         elif sys.argv[2] == "state":
             service_state = service_status.split()[1]
-            print(service_state)
+	    if service_state == "RUNNING":
+		print("1")
+	    elif service_state == "STOPPED":
+		print("0")
+            else:
+                print("10")
         else:
             print("Wrong Argument")
 else:
