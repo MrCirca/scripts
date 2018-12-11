@@ -10,54 +10,63 @@ if len(sys.argv) != 4:
 	print("Required 3 arguments host, username, password", file=sys.stderr)
 	sys.exit(1)
 
-proxmox_host, proxmox_username, proxmox_password = sys.argv[1:4]
-proxmox_api_url = 'https://'+proxmox_host+':8006/api2/json/'
-proxmox_creds = {'username':proxmox_username, 'realm':'pam', 'password':proxmox_password}
-r = requests.post(proxmox_api_url+'access/ticket', verify=False, data=proxmox_creds)
+host, username, password = sys.argv[1:4]
+api_url = 'https://'+host+':8006/api2/json/'
+creds = {'username':username, 'realm':'pam', 'password':password}
+r = requests.post(api_url+'access/ticket', verify=False, data=creds)
 result = r.json()
 ticket = result["data"]["ticket"]
 token = result["data"]["CSRFPreventionToken"]
 cookies = dict(PVEAuthCookie=ticket)
 
-def proxmox_endpoint_info(endpoint):
-	proxmox_information = requests.get(proxmox_api_url+endpoint, cookies=cookies, verify=False).json()
-	return proxmox_information
+def endpoint_info(endpoint):
+	information = requests.get(api_url+endpoint, cookies=cookies, verify=False).json()
+	return information
 
-def proxmox_nodes_names():
+def nodes_names():
 	node_list = []
-	proxmox_nodes_info = proxmox_endpoint_info('nodes/')
-	for proxmox_node in proxmox_nodes_info["data"]:
-		node_list.append(proxmox_node["id"].split('/')[1])
+	nodes_info = endpoint_info('nodes/')
+	for node in nodes_info["data"]:
+		node_list.append(node["id"].split('/')[1])
 	return node_list
 
-def discover_proxmox_cluster_nodes():
+def backend_ids(backend):
+	vms_id_list = []
+	nodes = nodes_names()
+	for vm_id in nodes:
+		vms_info = endpoint_info('nodes/'+vm_id+'/'+backend+'/')
+		for vm in vms_info["data"]:
+			vms_id_list.append(vm["vmid"])
+	print(vms_id_list)
+	return vms_id_list
+
+def discover_cluster_nodes():
 	discovered_nodes = []
-	proxmox_nodes = proxmox_nodes_names()
-	for node in proxmox_nodes:
+	nodes = nodes_names()
+	for node in nodes:
 		discovered_nodes.append({"{#PROXMOX_CLUSTER_NODE}": node })
 	print(json.dumps({'data' : discovered_nodes }))
 
-def proxmox_vms_names():
-	proxmox_node_vms = []
-	proxmox_nodes = proxmox_nodes_names()
-	for node in proxmox_nodes:
-		proxmox_vms_info = proxmox_endpoint_info('nodes/'+node+'/qemu/')
-		for vm in proxmox_vms_info["data"]:
-			proxmox_node_vms.append({"{#PROXMOX_VM}": vm["name"] })
-	print(json.dumps({'data' : proxmox_node_vms }))
+def vms_names():
+	node_vms = []
+	nodes = nodes_names()
+	for node in nodes:
+		vms_info = endpoint_info('nodes/'+node+'/qemu/')
+		for vm in vms_info["data"]:
+			node_vms.append({"{#PROXMOX_VM_ID}": vm["id"] })
+	print(json.dumps({'data' : node_vms }))
 
-def proxmox_cts_names():
-        proxmox_node_cts = []
-        proxmox_nodes = proxmox_nodes_names()
-        for node in proxmox_nodes:
-                proxmox_cts_info = proxmox_endpoint_info('nodes/'+node+'/lxc/')
-                for ct in proxmox_cts_info["data"]:
-                        proxmox_node_cts.append({"{#PROXMOX_CT}": ct["name"] })
-        print(json.dumps({'data' : proxmox_node_cts }))
+def cts_names():
+        node_cts = []
+        nodes = nodes_names()
+        for node in nodes:
+                cts_info = endpoint_info('nodes/'+node+'/lxc/')
+                for ct in cts_info["data"]:
+                        node_cts.append({"{#PROXMOX_CT_ID}": ct["id"] })
+        print(json.dumps({'data' : node_cts }))
 			
-			
-#proxmox_nodes_names()
-#discover_proxmox_cluster_nodes()
-proxmox_vms_names()
-proxmox_cts_names()
-#discover_proxmox_cluster_nodes()
+backend_ids('lxc')
+#discover_cluster_nodes()
+#vms_names()
+#cts_names()
+#discover_cluster_nodes()
