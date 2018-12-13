@@ -30,15 +30,25 @@ def nodes_names():
 		node_list.append(node["id"].split('/')[1])
 	return node_list
 
-def backend_ids(backend):
-	vms_id_list = []
+def backend_info(backend):
 	nodes = nodes_names()
-	for vm_id in nodes:
-		vms_info = endpoint_info('nodes/'+vm_id+'/'+backend+'/')
-		for vm in vms_info["data"]:
-			vms_id_list.append(vm["vmid"])
-	print(vms_id_list)
-	return vms_id_list
+	for virt_id in nodes:
+		virt_info = endpoint_info('nodes/{}/{}/'.format(virt_id,backend))
+	return virt_info
+
+def backend_ids(backend):
+	virt_id_list = []
+	virt_info = backend_info(backend)
+	for virt_id in virt_info["data"]:
+		virt_id_list.append(virt_id["vmid"])
+	return virt_id_list
+
+def backend_names(backend):
+	virt_name_list = []
+	virt_info = backend_info(backend)
+	for virt_name in virt_info["data"]:
+		virt_name_list.append(virt_name["name"])
+	return virt_name_list
 
 def discover_cluster_nodes():
 	discovered_nodes = []
@@ -47,26 +57,30 @@ def discover_cluster_nodes():
 		discovered_nodes.append({"{#PROXMOX_CLUSTER_NODE}": node })
 	print(json.dumps({'data' : discovered_nodes }))
 
-def vms_names():
-	node_vms = []
+def discover_backend_names(backend):
+	discover_backend_name_list = []
+	virt_names = backend_names(backend)
+	for name in virt_names:
+		discover_backend_name_list.append({"{{#PROXMOX_{}_NAME}}".format(backend.upper()): name })
+	print(json.dumps({'data' : discover_backend_name_list }))
+
+
+def backend_status(backend):
+	virt_ids = backend_ids(backend)
 	nodes = nodes_names()
 	for node in nodes:
-		vms_info = endpoint_info('nodes/'+node+'/qemu/')
-		for vm in vms_info["data"]:
-			node_vms.append({"{#PROXMOX_VM_ID}": vm["id"] })
-	print(json.dumps({'data' : node_vms }))
-
-def cts_names():
-        node_cts = []
-        nodes = nodes_names()
-        for node in nodes:
-                cts_info = endpoint_info('nodes/'+node+'/lxc/')
-                for ct in cts_info["data"]:
-                        node_cts.append({"{#PROXMOX_CT_ID}": ct["id"] })
-        print(json.dumps({'data' : node_cts }))
+		for virt_id in virt_ids:
+			virt_status = endpoint_info('nodes/{}/{}/{}/status/current'.format(node,backend,virt_id))
+			print(virt_status["data"]["status"])
 			
-backend_ids('lxc')
+		
+		
+#backend_ids('qemu')
+#backend_names('qemu')
+#discover_backend_names('qemu')
+backend_status('lxc')
 #discover_cluster_nodes()
 #vms_names()
 #cts_names()
 #discover_cluster_nodes()
+
