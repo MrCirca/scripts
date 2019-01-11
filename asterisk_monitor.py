@@ -15,6 +15,10 @@ manager = panoramisk.Manager(
         ssl=False,
         encoding='utf8')
 
+
+def callback(manager, event):
+    print(manager, event)
+
 def parse_args():
     mode = sys.argv[1]
     item = sys.argv[2]
@@ -26,16 +30,25 @@ def parse_args():
         act_args[action_arg_key] = action_arg_value
     return mode, item, act_args
 
+
 async def zabbix_discovery(discovery, args=None):
+    
     await manager.connect()
     mode, item, args = parse_args()
     if discovery == 'pjsip_trunks':
+         endpoints_discovery = []
          action = {
              'Action': 'PJSIPShowRegistrationsOutbound'
-         }
+         } 
+         manager.register_event('OutboundRegistrationDetail', callback)
          result = await manager.send_action(action, **args)
          response, *events, end = result
-         print(events)
+         for event in events:
+            if event.event == "OutboundRegistrationDetail":
+                outbound_endpoint = event.endpoint
+                endpoints_discovery.append({"{#ENDPOINT_NAME}": outbound_endpoint})
+                print(json.dumps({'data': endpoints_discovery}))
+
 
 
 def main():
