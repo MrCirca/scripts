@@ -7,27 +7,32 @@ import asterisk_ami_config
 
 
 conf = asterisk_ami_config.ami_config
-manager = panoramisk.Manager(loop=asyncio.get_event_loop(),host=conf['host'], username=conf['username'], secret=conf['secret'], port=5038, ssl=False, encoding='utf8')
+manager = panoramisk.Manager(
+        loop=asyncio.get_event_loop(),
+        host=conf['host'],
+        username=conf['username'],
+        secret=conf['secret'],
+        port=5038,
+        ssl=False,
+        encoding='utf8')
+
+
 action = sys.argv[1]
 
-@manager.register_event('EndpointList')
+@manager.register_event('')
 def callback(manager, event):
     print(manager, event)
 
-@manager.register_event('AuthDetail')
-def callback(manager, event):
-    print(manager, event)
-
-
-async def send_ami_action(ami_action):
+async def send_ami_action(ami_action, **kwargs):
     await manager.connect()
-    result = await manager.send_action({'Action': ami_action})    
+    kwargs['Action'] = ami_action
+    result = await manager.send_action(kwargs)
 #    print(result)
-    manager.close()
     response, *events, end = result
     if not response.response == 'Success':
         return "ERROR"
     return events
+    manager.close()
 
 def zabbix_endpoints_discovery(endpoints):    
     endpoints_discovery = []
@@ -38,14 +43,10 @@ def zabbix_endpoints_discovery(endpoints):
 
 def main():
     loop = asyncio.get_event_loop()
-#    asyncio.ensure_future(send_ami_action(action))
-#    loop.run_forever()
-    endpoints = loop.run_until_complete(send_ami_action(action))
-    if action == "PJSIPShowEndpoints":
-        zabbix_endpoints_discovery(endpoints)
-    pjsip_outbound_registrations(endpoints)
-#    get_endpoint_info(endpoints, sys.argv[2])
-    loop.close()
+    tt = loop.run_until_complete(send_ami_action(action))
+    for gg in tt:
+        print(gg.aor)
+    manager.loop.close()
 
 def get_endpoint_info(endpoints, endpoint_name):
     for endpoint in endpoints:
