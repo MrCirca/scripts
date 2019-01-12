@@ -50,16 +50,20 @@ async def zabbix_discovery(discovery, args=None):
 async def zabbix_items(item, **args):
     await manager.connect()
     mode, item, args = parse_args()
-    if item == 'pjsip_endpoint_status':
+    if item == 'pjsip_trunk_status':
         action = {
              'Action': 'PJSIPShowRegistrationsOutbound'
          }
         result = await manager.send_action(action, **args)
         response, *events, end = result
-        for event in events:
-           if event.event == "OutboundRegistrationDetail":
-                if event.endpoint == args['Endpoint']:
-                    print(event.status)
+        status = pjsip_trunk_registration(events, **args)
+        return status
+
+def pjsip_trunk_registration(trunks, **args):
+    for trunk in trunks:
+        if trunk.event == "OutboundRegistrationDetail":
+            if trunk.endpoint == args['Endpoint']:
+                print(trunk.status)
 
 def main():
     manager.connect()
