@@ -1,4 +1,3 @@
-#!/root/pyenv/bin/python3
 import panoramisk
 import asyncio
 import sys
@@ -31,8 +30,7 @@ def parse_args():
     return mode, item, act_args
 
 
-async def zabbix_discovery(discovery, args=None):
-    
+async def zabbix_discovery(discovery, args=None):    
     await manager.connect()
     mode, item, args = parse_args()
     if discovery == 'pjsip_trunks':
@@ -49,7 +47,19 @@ async def zabbix_discovery(discovery, args=None):
                 endpoints_discovery.append({"{#ENDPOINT_NAME}": outbound_endpoint})
                 print(json.dumps({'data': endpoints_discovery}))
 
-
+async def zabbix_items(item, **args):
+    await manager.connect()
+    mode, item, args = parse_args()
+    if item == 'pjsip_endpoint_status':
+        action = {
+             'Action': 'PJSIPShowRegistrationsOutbound'
+         }
+        result = await manager.send_action(action, **args)
+        response, *events, end = result
+        for event in events:
+           if event.event == "OutboundRegistrationDetail":
+                if event.endpoint == args['Endpoint']:
+                    print(event.status)
 
 def main():
     manager.connect()
@@ -60,7 +70,9 @@ def main():
         args = None
     loop = asyncio.get_event_loop()
     if mode == '-d':
-        discovery_output = loop.run_until_complete(zabbix_discovery(item, **args))
-    return discovery_output
+        output = loop.run_until_complete(zabbix_discovery(item, **args))
+    elif mode == '-i':
+        output = loop.run_until_complete(zabbix_items(item, **args))
+    return output
 
 main()
