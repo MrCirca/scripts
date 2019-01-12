@@ -46,6 +46,8 @@ async def zabbix_discovery(discovery, args=None):
                 outbound_endpoint = event.endpoint
                 endpoints_discovery.append({"{#ENDPOINT_NAME}": outbound_endpoint})
                 print(json.dumps({'data': endpoints_discovery}))
+    else:
+        print("Wrong keyword in discovery(-d) mode")
 
 async def zabbix_items(item, **args):
     await manager.connect()
@@ -58,6 +60,8 @@ async def zabbix_items(item, **args):
         response, *events, end = result
         status = pjsip_trunk_registration(events, **args)
         return status
+    else:
+        print("Wrong keyword in item(-i) mode")
 
 def pjsip_trunk_registration(trunks, **args):
     for trunk in trunks:
