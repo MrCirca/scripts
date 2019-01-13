@@ -52,16 +52,27 @@ async def zabbix_discovery(discovery, args=None):
 async def zabbix_items(item, **args):
     await manager.connect()
     mode, item, args = parse_args()
-    if item == 'pjsip_trunk_status':
+    if item == 'pjsip_trunk_registration':
         action = {
              'Action': 'PJSIPShowRegistrationsOutbound'
          }
         result = await manager.send_action(action, **args)
         response, *events, end = result
         status = pjsip_trunk_registration(events, **args)
-        return status
-    else:
-        print("Wrong keyword in item(-i) mode")
+    elif item == 'pjsip_trunk_status':
+        action = {
+             'Action': 'PJSIPShowEndpoints'
+         }
+        result = await manager.send_action(action)
+        response, *events, end = result
+        status = pjsip_device_state(events, **args)
+    return status
+
+
+def pjsip_device_state(endpoints, **args):
+    for endpoint in endpoints:
+        if endpoint.aor == args['Endpoint']:
+            print(endpoint.devicestate)
 
 def pjsip_trunk_registration(trunks, **args):
     for trunk in trunks:
@@ -82,5 +93,6 @@ def main():
     elif mode == '-i':
         output = loop.run_until_complete(zabbix_items(item, **args))
     return output
+    managet.close()
 
 main()
