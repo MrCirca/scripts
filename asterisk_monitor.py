@@ -47,7 +47,9 @@ async def zabbix_discovery(discovery, args=None):
                 endpoints_discovery.append({"{#ENDPOINT_NAME}": outbound_endpoint})
                 print(json.dumps({'data': endpoints_discovery}))
     else:
-        print("Wrong keyword in discovery(-d) mode")
+        print("Discovery name does not exist")
+
+
 
 async def zabbix_items(item, **args):
     await manager.connect()
@@ -59,6 +61,7 @@ async def zabbix_items(item, **args):
         result = await manager.send_action(action, **args)
         response, *events, end = result
         status = pjsip_trunk_registration(events, **args)
+        return status
     elif item == 'pjsip_trunk_status':
         action = {
              'Action': 'PJSIPShowEndpoints'
@@ -66,19 +69,43 @@ async def zabbix_items(item, **args):
         result = await manager.send_action(action)
         response, *events, end = result
         status = pjsip_device_state(events, **args)
-    return status
+        return status
+    else:
+        print("Item name does not exist")      
 
 
 def pjsip_device_state(endpoints, **args):
     for endpoint in endpoints:
         if endpoint.aor == args['Endpoint']:
-            print(endpoint.devicestate)
+            if endpoint.devicestate == "Available":
+                print("100")
+            elif endpoint.devicestate == "Not in use":
+                print("200")
+            elif endpoint.devicestate == "In use":
+                print("300")
+            elif endpoint.devicestate == "Busy":
+                print("400")
+            elif endpoint.devicestate == "Invalid":
+                print("500")
+            elif endpoint.devicestate == "Unavailable":
+                print("600")
+            elif endpoint.devicestate == "Ringing":
+                print("700")
+            elif endpoint.devicestate == "Ring in use":
+                print("800")
+            elif endpoint.devicestate == "On hold":
+                print("900")
+
+
 
 def pjsip_trunk_registration(trunks, **args):
     for trunk in trunks:
         if trunk.event == "OutboundRegistrationDetail":
             if trunk.endpoint == args['Endpoint']:
-                print(trunk.status)
+                 if trunk.status == "Registered":
+                     print("0")
+                 else:
+                     print("1")
 
 def main():
     manager.connect()
@@ -93,6 +120,6 @@ def main():
     elif mode == '-i':
         output = loop.run_until_complete(zabbix_items(item, **args))
     return output
-    managet.close()
+    manager.close()
 
 main()
