@@ -70,8 +70,22 @@ async def zabbix_items(item, **args):
         response, *events, end = result
         status = pjsip_device_state(events, **args)
         return status
+    elif item == 'pjsip_trunk_rtt':
+        action = {
+             'Action': 'PJSIPShowEndpoint'
+         }
+        result = await manager.send_action(action, **args)
+        response, *events, end = result
+        status = pjsip_endpoint_rtt(events)
+        return status
     else:
         print("Item name does not exist")      
+
+
+def pjsip_endpoint_rtt(events):
+    for event in events:
+        if event.event == "ContactStatusDetail":
+            print(event.roundtripusec)
 
 
 def pjsip_device_state(endpoints, **args):
