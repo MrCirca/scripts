@@ -103,9 +103,9 @@ def pjsip_trunk_registration(trunks, **args):
         if trunk.event == "OutboundRegistrationDetail":
             if trunk.endpoint == args['Endpoint']:
                  if trunk.status == "Registered":
-                     print("0")
-                 else:
                      print("1")
+                 else:
+                     print("0")
 
 def main():
     manager.connect()
