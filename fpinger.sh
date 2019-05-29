@@ -1,4 +1,4 @@
-#/bin/sh
+#/bin/bash
 
 FPING_TARGET=$2
 FPING_COUNT=$3
@@ -28,6 +28,7 @@ elif [ $8 == "latency" ]; then
 fi
 
 COMMAND="$COMMAND | sed -r 's/.*/- $ZABBIX_TRAP_ITEM_KEY[$1] \0/g'"
-#COMMAND="$COMMAND | $ZABBIX_SENDER_COMMAND"
 
-echo $COMMAND
+COMMAND="$COMMAND | $ZABBIX_SENDER_COMMAND"
+
+echo $COMMAND | at now &> /dev/null
